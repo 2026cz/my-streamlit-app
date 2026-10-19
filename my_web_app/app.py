@@ -4,15 +4,15 @@ import pandas as pd
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
-# 1. 設定憑證路徑
-base_dir = os.path.dirname(os.path.abspath(__file__))
-json_path = os.path.join(base_dir, 'credentials.json')
+# 1. 從 Streamlit Secrets 讀取 JSON 內容
+# 假設您在 Secrets 裡設定的 key 是 "gcp_service_account"
+creds_dict = st.secrets["gcp_service_account"]
 
-# 2. 設定 Google Sheets 的範圍
-scope = ['https://www.googleapis.com/auth/spreadsheets']
+# 2. 設定權限範圍
+scope = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
 
-# 3. 認證並建立連線
-creds = ServiceAccountCredentials.from_json_keyfile_name(json_path, scope)
+# 3. 使用字典進行認證 (不再需要讀取檔案)
+creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
 client = gspread.authorize(creds)
 
 # 4. 打開試算表 (請將下方的 ID 換成你自己的)
