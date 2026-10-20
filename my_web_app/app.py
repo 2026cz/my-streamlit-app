@@ -42,8 +42,16 @@ with st.form("input_form", clear_on_submit=True):
     # 建立輸入欄位
     user_name = st.text_input("姓名")
     user_items = st.text_input("品項",)
-    user_Sweetness = st.text_input("甜度")
-    user_icecubes = st.text_input("冰塊")
+
+    user_Sweetness = st.selectbox(
+        "甜度",
+        ["正常甜", "少糖", "半糖", "微糖", "無糖"]
+    )
+
+    user_icecubes = st.selectbox(
+        "冰塊",
+        ["正常冰", "少冰", "微冰", "去冰", "熱"]
+    )
 
     # 送出按鈕
     submitted = st.form_submit_button("送出資料")
@@ -63,3 +71,21 @@ st.subheader("目前的資料庫內容")
 data = sheet.get_all_records()
 df = pd.DataFrame(data)
 st.dataframe(df)
+
+# 這裡加一個檢查，避免資料為空時報錯
+if not df.empty:
+    # 新增一個計數欄位
+    df['杯數'] = 1
+
+    # 統計分組
+    # 注意：這裡的欄位名稱必須與你 Google Sheet 的第一列標題完全對應
+    summary_df = df.groupby(['品項', '甜度', '冰塊'], as_index=False)['杯數'].sum()
+
+    st.subheader("📊 飲料統計結果")
+    st.dataframe(summary_df, use_container_width=True)
+
+    st.divider()
+    st.subheader("📝 原始資料清單")
+    st.dataframe(df.drop(columns=['杯數']), use_container_width=True)
+else:
+    st.write("目前尚無資料。")
