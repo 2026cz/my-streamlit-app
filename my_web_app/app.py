@@ -60,10 +60,22 @@ with st.form("input_form", clear_on_submit=True):
         if user_name == "":
             st.warning("姓名不能空白喔！")
         else:
-            # 將資料寫入 Google Sheets
-            # 這裡的順序要對應你試算表的欄位順序
-            sheet.append_row([user_name, user_items, user_Sweetness, user_icecubes])
-            st.success(f"感謝 {user_name}，資料已成功存入！")
+            new_row = [user_name, user_items, user_Sweetness, user_icecubes]
+
+            # 在第一欄（姓名欄）尋找相同的姓名
+            try:
+                cell = sheet.find(user_name, in_column=1)
+            except Exception:
+                cell = None  # 找不到時 gspread 會拋出例外
+
+            if cell:
+                # 找到相同姓名：更新該列（cell.row 為列號）
+                sheet.update(f"A{cell.row}:D{cell.row}", [new_row])
+                st.success(f"{user_name} 的資料已覆蓋更新！")
+            else:
+                # 找不到：新增一列
+                sheet.append_row(new_row)
+                st.success(f"感謝 {user_name}，資料已成功存入！")
 
 # 顯示目前的資料庫內容
 st.divider()
