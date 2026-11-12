@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import gspread
-from gspread.exceptions import CellNotFound
 from oauth2client.service_account import ServiceAccountCredentials
 
 # ==================== 設定 ====================
@@ -63,10 +62,10 @@ if submitted:
         try:
             sheet = get_sheet()
             new_row = [user_name, user_items.strip(), user_sweetness, user_icecubes]
-            try:
-                cell = sheet.find(user_name, in_column=1)
-            except CellNotFound:
-                cell = None
+
+            matches = sheet.findall(user_name, in_column=1)
+            cell = matches[0] if matches else None
+
 
             if cell:
                 sheet.update(f"A{cell.row}:D{cell.row}", [new_row])
