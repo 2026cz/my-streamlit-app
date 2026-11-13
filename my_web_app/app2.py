@@ -33,18 +33,6 @@ except Exception as e:
     st.write("1. 試算表 ID 是否正確。")
     st.write("2. 是否已將 credentials.json 內的 client_email 加入試算表的「共用」名單中。")
 
-MENU_IMAGE = "123.jpg"
-
-@st.dialog("飲料菜單", width="large")
-def show_menu():
-    st.image(MENU_IMAGE, use_container_width=True)
-
-st.subheader("📋 飲料菜單")
-st.image(MENU_IMAGE, width=400)
-
-if st.button("🔍 查看菜單大圖"):
-    show_menu()
-
 st.title("飲料統計測試")
 
 # 建立一個表單
@@ -57,7 +45,7 @@ with st.form("input_form", clear_on_submit=True):
 
     user_Sweetness = st.selectbox(
         "甜度",
-        ["正常甜(10分糖)", "少糖(7分糖)", "半糖(5分糖)", "微糖(3分糖)", "無糖"]
+        ["正常甜", "少糖", "半糖", "微糖", "無糖"]
     )
 
     user_icecubes = st.selectbox(
