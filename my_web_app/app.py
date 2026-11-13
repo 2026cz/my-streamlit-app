@@ -3,6 +3,7 @@ import streamlit as st
 import pandas as pd
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+from pathlib import Path
 
 # 1. 從 Streamlit Secrets 讀取 JSON 內容
 # 假設您在 Secrets 裡設定的 key 是 "gcp_service_account"
@@ -33,7 +34,8 @@ except Exception as e:
     st.write("1. 試算表 ID 是否正確。")
     st.write("2. 是否已將 credentials.json 內的 client_email 加入試算表的「共用」名單中。")
 
-MENU_IMAGE = "123.jpg"
+BASE_DIR = Path(__file__).parent
+MENU_IMAGE = BASE_DIR / "123.jpg"
 
 @st.dialog("飲料菜單", width="large")
 def show_menu():
