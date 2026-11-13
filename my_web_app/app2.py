@@ -1,101 +1,115 @@
+import os
 import streamlit as st
 import pandas as pd
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
-# ==================== 設定 ====================
-SPREADSHEET_ID = "1cgP0Uiu2AL3pmOjsRW5p2f0t-blCo2TjpYwWEKO82z0"
-MENU_IMAGE = "123.jpg"  # 請換成實際的圖片路徑或網址
-SCOPE = [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive",
-]
-COLUMNS = ["姓名", "品項", "甜度", "冰塊"]  # 需與試算表第一列標題一致
-SWEETNESS_OPTIONS = ["正常甜(10分甜)", "少糖(7分甜)", "半糖(5分甜)", "微糖(3分甜)", "無糖"]
-ICE_OPTIONS = ["正常冰", "少冰", "微冰", "去冰", "熱"]
+# 1. 從 Streamlit Secrets 讀取 JSON 內容
+# 假設您在 Secrets 裡設定的 key 是 "gcp_service_account"
+creds_dict = st.secrets["gcp_service_account"]
 
+# 2. 設定權限範圍
+scope = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
 
-# ==================== 連線（快取，避免重複認證） ====================
-@st.cache_resource
-def get_sheet():
-    creds = ServiceAccountCredentials.from_json_keyfile_dict(
-        st.secrets["gcp_service_account"], SCOPE
-    )
-    client = gspread.authorize(creds)
-    return client.open_by_key(SPREADSHEET_ID).sheet1
+# 3. 使用字典進行認證 (不再需要讀取檔案)
+creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+client = gspread.authorize(creds)
 
+# 4. 打開試算表 (請將下方的 ID 換成你自己的)
+# 獲取方式：打開你的試算表，網址列中 /d/ 後面到 /edit 前面那串亂碼就是 ID
+spreadsheet_id = "1cgP0Uiu2AL3pmOjsRW5p2f0t-blCo2TjpYwWEKO82z0"
 
-@st.cache_data(ttl=30)
-def load_data():
-    return pd.DataFrame(get_sheet().get_all_records(expected_headers=COLUMNS))
+try:
+    sheet = client.open_by_key(spreadsheet_id).sheet1
 
+    # 測試：讀取第一格資料
+    data = sheet.get_all_records()
+    st.write("成功連線到試算表！")
+    st.write(data)
 
-# ==================== 介面 ====================
-st.title("飲料統計測試")
+except Exception as e:
+    st.error(f"發生錯誤：{e}")
+    st.write("請確認：")
+    st.write("1. 試算表 ID 是否正確。")
+    st.write("2. 是否已將 credentials.json 內的 client_email 加入試算表的「共用」名單中。")
 
-# 菜單區
+MENU_IMAGE = "123.jpg"
+
 @st.dialog("飲料菜單", width="large")
 def show_menu():
     st.image(MENU_IMAGE, use_container_width=True)
 
 st.subheader("📋 飲料菜單")
 st.image(MENU_IMAGE, width=400)
+
 if st.button("🔍 查看菜單大圖"):
     show_menu()
 
-# 表單區
+st.title("飲料統計測試")
+
+# 建立一個表單
 with st.form("input_form", clear_on_submit=True):
     st.write("請填寫以下資訊：")
+
+    # 建立輸入欄位
     user_name = st.text_input("姓名")
-    user_items = st.text_input("品項")
-    user_sweetness = st.selectbox("甜度", SWEETNESS_OPTIONS)
-    user_icecubes = st.selectbox("冰塊", ICE_OPTIONS)
+    user_items = st.text_input("品項",)
+
+    user_Sweetness = st.selectbox(
+        "甜度",
+        ["正常甜(10分糖)", "少糖(7分糖)", "半糖(5分糖)", "微糖(3分糖)", "無糖"]
+    )
+
+    user_icecubes = st.selectbox(
+        "冰塊",
+        ["正常冰", "少冰", "微冰", "去冰", "熱"]
+    )
+
+    # 送出按鈕
     submitted = st.form_submit_button("送出資料")
 
-if submitted:
-    user_name = user_name.strip()
-    if not user_name:
-        st.warning("姓名不能空白喔！")
-    elif not user_items.strip():
-        st.warning("品項不能空白喔！")
-    else:
-        try:
-            sheet = get_sheet()
-            new_row = [user_name, user_items.strip(), user_sweetness, user_icecubes]
+    if submitted:
+        if user_name == "":
+            st.warning("姓名不能空白喔！")
+        else:
+            new_row = [user_name, user_items, user_Sweetness, user_icecubes]
 
-            matches = sheet.findall(user_name, in_column=1)
-            cell = matches[0] if matches else None
-
+            # 在第一欄（姓名欄）尋找相同的姓名
+            try:
+                cell = sheet.find(user_name, in_column=1)
+            except Exception:
+                cell = None  # 找不到時 gspread 會拋出例外
 
             if cell:
+                # 找到相同姓名：更新該列（cell.row 為列號）
                 sheet.update(f"A{cell.row}:D{cell.row}", [new_row])
                 st.success(f"{user_name} 的資料已覆蓋更新！")
             else:
+                # 找不到：新增一列
                 sheet.append_row(new_row)
                 st.success(f"感謝 {user_name}，資料已成功存入！")
 
-            load_data.clear()  # 寫入後清除快取，確保顯示最新資料
-        except Exception as e:
-            st.error(f"寫入失敗：{e}")
-
-# 資料顯示區
+# 顯示目前的資料庫內容
 st.divider()
 st.subheader("目前的資料庫內容")
+data = sheet.get_all_records()
+df = pd.DataFrame(data)
+st.dataframe(df)
 
-try:
-    df = load_data()
-except Exception as e:
-    st.error(f"讀取資料失敗：{e}")
-    st.write("請確認試算表 ID 正確，並已將服務帳號的 client_email 加入共用名單。")
-    st.stop()
-
-st.dataframe(df, use_container_width=True)
-
+# 這裡加一個檢查，避免資料為空時報錯
 if not df.empty:
-    df_count = df.assign(杯數=1)
-    summary_df = df_count.groupby(["品項", "甜度", "冰塊"], as_index=False)["杯數"].sum()
+    # 新增一個計數欄位
+    df['杯數'] = 1
+
+    # 統計分組
+    # 注意：這裡的欄位名稱必須與你 Google Sheet 的第一列標題完全對應
+    summary_df = df.groupby(['品項', '甜度', '冰塊'], as_index=False)['杯數'].sum()
 
     st.subheader("📊 飲料統計結果")
     st.dataframe(summary_df, use_container_width=True)
+
+    st.divider()
+    st.subheader("📝 原始資料清單")
+    st.dataframe(df.drop(columns=['杯數']), use_container_width=True)
 else:
     st.write("目前尚無資料。")
