@@ -44,6 +44,10 @@ def show_menu():
 st.subheader("📋 飲料菜單")
 st.image(MENU_IMAGE, width=400)
 
+if st.button("🔍 放大檢視菜單"):
+    show_menu()
+
+
 st.title("飲料統計測試")
 
 # 建立一個表單
