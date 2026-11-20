@@ -71,6 +71,7 @@ with st.form("input_form", clear_on_submit=True):
     user_topping = st.selectbox(
         "加料",
         ["無", "珍珠", "椰果", "芋圓", "波霸", "仙草凍"]
+    )
 
     user_note = st.text_input("備註")
 
