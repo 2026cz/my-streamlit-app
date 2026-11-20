@@ -56,7 +56,7 @@ with st.form("input_form", clear_on_submit=True):
 
     # 建立輸入欄位
     user_name = st.text_input("姓名")
-    user_items = st.text_input("品項",)
+    user_items = st.text_input("品項")
 
     user_Sweetness = st.selectbox(
         "甜度",
@@ -67,6 +67,12 @@ with st.form("input_form", clear_on_submit=True):
         "冰塊",
         ["正常冰", "少冰", "微冰", "去冰", "熱"]
     )
+
+    user_topping = st.selectbox(
+        "加料",
+        ["無", "珍珠", "椰果", "芋圓", "波霸", "仙草凍"]
+
+    user_note = st.text_input("備註")
 
     # 送出按鈕
     submitted = st.form_submit_button("送出資料")
